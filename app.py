@@ -1,5 +1,3 @@
-<<<<<<< Updated upstream
-=======
 import streamlit as st
 from ai_feedback import generate_ai_feedback
 from image_analyzer import analyze_image
@@ -12,7 +10,6 @@ if "page" not in st.session_state:
 
 if "scores" not in st.session_state:
     st.session_state.scores = None
-
 
 # -------- PAGE 1 : UPLOAD --------
 if st.session_state.page == "upload":
@@ -28,14 +25,11 @@ if st.session_state.page == "upload":
         st.image(uploaded_file, caption="Uploaded Poster", use_column_width=True)
 
         if st.button("Analyze Poster"):
-            # TEMPORARY scores (replace with real analysis later)
             scores = analyze_image(uploaded_file)
-
 
             st.session_state.scores = scores
             st.session_state.page = "feedback"
             st.rerun()
-
 
 # -------- PAGE 2 : FEEDBACK --------
 elif st.session_state.page == "feedback":
@@ -54,6 +48,3 @@ elif st.session_state.page == "feedback":
     if st.button("⬅ Back to Upload"):
         st.session_state.page = "upload"
         st.rerun()
-
-
->>>>>>> Stashed changes
