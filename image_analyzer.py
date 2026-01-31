@@ -13,5 +13,6 @@ def analyze_image(image_array):
     return {
         "brightness": round(brightness, 2),
         "contrast": round(contrast, 2),
-        "sharpness": round(sharpness, 2)
+        "sharpness": round(sharpness, 2),
+        "readability": round(sharpness, 2)  # safe alias
     }

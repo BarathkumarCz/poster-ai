@@ -1,50 +1,63 @@
 import streamlit as st
-from ai_feedback import generate_ai_feedback
-from image_analyzer import analyze_image
+
+from backend.image_loader import load_image
+from backend.feature_extractor import extract_features
+from backend.scorer import score
+from backend.feedback import generate_feedback
+from backend.ocr import extract_text
+from backend.readability import compute_readability
 
 st.set_page_config(page_title="Poster AI", layout="centered")
 
-# -------- Session State --------
-if "page" not in st.session_state:
-    st.session_state.page = "upload"
+st.title("🎨 AI Poster Analysis System")
+st.write("Upload a poster to get AI-based design + readability feedback")
 
-if "scores" not in st.session_state:
-    st.session_state.scores = None
+uploaded_file = st.file_uploader(
+    "Upload Poster Image",
+    type=["png", "jpg", "jpeg"]
+)
 
-# -------- PAGE 1 : UPLOAD --------
-if st.session_state.page == "upload":
-    st.title("🎨 AI Poster Analysis System")
-    st.write("Upload your poster to get AI-based design feedback")
+st.caption("🔍 Analysis uses full‑resolution image")
 
-    uploaded_file = st.file_uploader(
-        "Upload Poster Image",
-        type=["png", "jpg", "jpeg"]
+if uploaded_file is not None:
+    # UI display (scaled only for screen)
+    st.image(
+        uploaded_file,
+        caption="Uploaded Poster (display scaled, analysis uses full resolution)",
+        width=800
     )
 
-    if uploaded_file:
-        st.image(uploaded_file, caption="Uploaded Poster", use_column_width=True)
+    if st.button("Analyze Poster"):
+        # ---- Load high‑resolution image ----
+        image_array = load_image(uploaded_file)
 
-        if st.button("Analyze Poster"):
-            scores = analyze_image(uploaded_file)
+        # ---- OCR ----
+        text = extract_text(image_array)
+        st.subheader("🧾 Detected Text (OCR)")
+        st.text(text if text else "No readable text detected")
 
-            st.session_state.scores = scores
-            st.session_state.page = "feedback"
-            st.rerun()
+        # ---- Visual features ----
+        features = extract_features(image_array)
 
-# -------- PAGE 2 : FEEDBACK --------
-elif st.session_state.page == "feedback":
-    st.title("📝 AI Design Feedback")
+        # ---- Readability (OCR‑based) ----
+        features["readability"] = compute_readability(
+            text,
+            image_array.shape
+        )
 
-    scores = st.session_state.scores
+        # ---- Optional OCR metadata ----
+        features["text_length"] = len(text)
+        features["has_text"] = len(text) > 0
 
-    st.subheader("Poster Scores")
-    st.write(scores)
+        # ---- Scoring ----
+        scores = score(features)
 
-    ai_text = generate_ai_feedback(scores)
+        st.subheader("📊 Poster Scores")
+        st.json(scores)
 
-    st.subheader("AI Suggestions")
-    st.write(ai_text)
+        # ---- AI Feedback ----
+        feedback = generate_feedback(scores)
 
-    if st.button("⬅ Back to Upload"):
-        st.session_state.page = "upload"
-        st.rerun()
+        st.subheader("🧠 AI Suggestions")
+        for f in feedback:
+            st.write("•", f)
