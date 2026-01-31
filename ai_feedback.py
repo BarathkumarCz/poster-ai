@@ -1,27 +1,45 @@
 def generate_ai_feedback(scores):
     """
-    Generates AI-based design feedback from poster scores
+    Generates structured AI-based design feedback from poster scores
     """
 
     contrast = scores.get("contrast", 0)
     readability = scores.get("readability", 0)
 
-    feedback = []
+    feedback = {
+        "contrast_feedback": "",
+        "readability_feedback": "",
+        "overall_comment": "",
+        "rating": ""
+    }
 
-    # Contrast feedback
+    # -------- Contrast --------
     if contrast >= 7:
-        feedback.append("Good color contrast. Text is clearly visible.")
+        feedback["contrast_feedback"] = "Good color contrast. Text is clearly visible."
     elif contrast >= 4.5:
-        feedback.append("Moderate contrast. Increasing contrast will improve readability.")
+        feedback["contrast_feedback"] = "Moderate contrast. Increasing contrast will improve clarity."
     else:
-        feedback.append("Low contrast detected. Use darker text or lighter background.")
+        feedback["contrast_feedback"] = "Low contrast detected. Use darker text or lighter backgrounds."
 
-    # Readability feedback
+    # -------- Readability --------
     if readability >= 8:
-        feedback.append("Excellent readability and visual clarity.")
+        feedback["readability_feedback"] = "Excellent readability and spacing."
     elif readability >= 6:
-        feedback.append("Readable design, but font size or spacing can be improved.")
+        feedback["readability_feedback"] = "Readable, but font size or spacing can be improved."
     else:
-        feedback.append("Poor readability. Increase font size and spacing.")
+        feedback["readability_feedback"] = "Poor readability. Increase font size and line spacing."
 
-    return " ".join(feedback)
+    # -------- Overall Rating --------
+    avg_score = (contrast + readability) / 2
+
+    if avg_score >= 8:
+        feedback["rating"] = "Excellent"
+        feedback["overall_comment"] = "The poster is well‑designed and visually effective."
+    elif avg_score >= 6:
+        feedback["rating"] = "Good"
+        feedback["overall_comment"] = "The poster is decent but has scope for improvement."
+    else:
+        feedback["rating"] = "Needs Improvement"
+        feedback["overall_comment"] = "The poster requires significant design improvements."
+
+    return feedback
