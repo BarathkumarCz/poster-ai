@@ -1,50 +1,23 @@
 import streamlit as st
-from ai_feedback import generate_ai_feedback
-from image_analyzer import analyze_image
 
-st.set_page_config(page_title="Poster AI", layout="centered")
+st.set_page_config(
+    page_title="Poster AI",
+    page_icon="🎨",
+    layout="centered"
+)
 
-# -------- Session State --------
-if "page" not in st.session_state:
-    st.session_state.page = "upload"
+st.title("🎨 Poster AI")
+st.write("Upload a poster image to analyze its design and readability")
 
-if "scores" not in st.session_state:
-    st.session_state.scores = None
+uploaded_file = st.file_uploader(
+    "Upload Poster Image",
+    type=["png", "jpg", "jpeg"]
+)
 
-# -------- PAGE 1 : UPLOAD --------
-if st.session_state.page == "upload":
-    st.title("🎨 AI Poster Analysis System")
-    st.write("Upload your poster to get AI-based design feedback")
+if uploaded_file is not None:
+    st.image(uploaded_file, caption="Poster Preview", width=700)
 
-    uploaded_file = st.file_uploader(
-        "Upload Poster Image",
-        type=["png", "jpg", "jpeg"]
-    )
+    if st.button("Analyze Poster", use_container_width=True):
+        st.session_state.uploaded_file = uploaded_file
+        st.switch_page("pages/1_Results.py")
 
-    if uploaded_file:
-        st.image(uploaded_file, caption="Uploaded Poster", use_column_width=True)
-
-        if st.button("Analyze Poster"):
-            scores = analyze_image(uploaded_file)
-
-            st.session_state.scores = scores
-            st.session_state.page = "feedback"
-            st.rerun()
-
-# -------- PAGE 2 : FEEDBACK --------
-elif st.session_state.page == "feedback":
-    st.title("📝 AI Design Feedback")
-
-    scores = st.session_state.scores
-
-    st.subheader("Poster Scores")
-    st.write(scores)
-
-    ai_text = generate_ai_feedback(scores)
-
-    st.subheader("AI Suggestions")
-    st.write(ai_text)
-
-    if st.button("⬅ Back to Upload"):
-        st.session_state.page = "upload"
-        st.rerun()
