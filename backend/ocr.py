@@ -2,34 +2,98 @@ import cv2
 import numpy as np
 import pytesseract
 from PIL import Image
+import platform
+import os
 
-# ✅ Explicit path for Windows (fixes TesseractNotFoundError)
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# ---------------------------
+# Auto‑detect Tesseract path
+# ---------------------------
+if platform.system() == "Windows":
+    possible_paths = [
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            pytesseract.pytesseract.tesseract_cmd = path
+            break
 
 
-def extract_text(image_array):
+# ---------------------------
+# Image preprocessing
+# ---------------------------
+def preprocess_image(img: np.ndarray) -> list:
     """
-    image_array: NumPy array (H x W x C) from Streamlit upload
-    returns: extracted text (string)
+    Generate multiple preprocessed versions of the image
+    to improve OCR accuracy on different fonts.
     """
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    if image_array is None:
+    processed_images = []
+
+    # 1. Original grayscale
+    processed_images.append(gray)
+
+    # 2. Adaptive threshold (great for posters)
+    thresh = cv2.adaptiveThreshold(
+        gray,
+        255,
+        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY,
+        31,
+        15,
+    )
+    processed_images.append(thresh)
+
+    # 3. Inverted threshold (for light text on dark bg)
+    inv_thresh = cv2.bitwise_not(thresh)
+    processed_images.append(inv_thresh)
+
+    # 4. Sharpened image
+    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+    sharpened = cv2.filter2D(gray, -1, kernel)
+    processed_images.append(sharpened)
+
+    return processed_images
+
+
+# ---------------------------
+# OCR extraction
+# ---------------------------
+def extract_text(image: np.ndarray) -> str:
+    """
+    Extract text using multiple OCR strategies
+    and combine the best results.
+    """
+    processed_images = preprocess_image(image)
+
+    custom_config = r"--oem 3 --psm 6"
+
+    texts = []
+
+    for img in processed_images:
+        try:
+            text = pytesseract.image_to_string(
+                Image.fromarray(img),
+                lang="eng",
+                config=custom_config,
+            )
+            if text.strip():
+                texts.append(text.strip())
+        except Exception:
+            continue
+
+    if not texts:
         return ""
 
-    # Ensure uint8 format
-    if image_array.dtype != np.uint8:
-        image_array = image_array.astype(np.uint8)
+    # Remove duplicates & merge
+    unique_lines = set()
+    for t in texts:
+        for line in t.splitlines():
+            line = line.strip()
+            if len(line) > 2:
+                unique_lines.add(line)
 
-    # Convert to grayscale
-    gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
-
-    # Optional preprocessing for better OCR
-    gray = cv2.threshold(
-        gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
-    )[1]
-
-    try:
-        text = pytesseract.image_to_string(gray)
-        return text.strip()
-    except Exception as e:
-        return f"OCR Error: {str(e)}"
+    final_text = "\n".join(sorted(unique_lines))
+    return final_text

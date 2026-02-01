@@ -6,8 +6,8 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("🎨 Poster AI")
-st.write("Upload a poster image to analyze its design and readability")
+st.title("🎨 AI Poster Analysis System")
+st.write("Upload a poster and get AI‑based design & readability feedback")
 
 uploaded_file = st.file_uploader(
     "Upload Poster Image",
@@ -15,9 +15,8 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file is not None:
-    st.image(uploaded_file, caption="Poster Preview", width=700)
+    st.image(uploaded_file, caption="Uploaded Poster", width=600)
 
-    if st.button("Analyze Poster", use_container_width=True):
-        st.session_state.uploaded_file = uploaded_file
-        st.switch_page("pages/1_Results.py")
-
+    if st.button("Analyze Poster 🚀"):
+        st.session_state["uploaded_file"] = uploaded_file
+        st.switch_page("pages/results.py")
